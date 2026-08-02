@@ -17,7 +17,7 @@ DAILY_FROM_DATE = date(2027, 7, 1)
 
 # Día de la semana en el que se publica mientras es "semanal".
 # 0 = lunes ... 6 = domingo
-WEEKLY_WEEKDAY = 6  # lunes
+WEEKLY_WEEKDAY = 0  # lunes
 
 # ------------------------------------------------------------------
 # 3. TEXTOS
