@@ -68,3 +68,46 @@ def publish_media(ig_user_id: str, container_id: str, token: str) -> str:
         f"{GRAPH_BASE}/{ig_user_id}/media_publish",
         data={
             "creation_id": container_id,
+            "access_token": token,
+        },
+        timeout=30,
+    )
+    if not resp.ok:
+        print(f"Respuesta de error completa de Meta: {resp.text}")
+    resp.raise_for_status()
+    data = resp.json()
+    if "id" not in data:
+        raise RuntimeError(f"Respuesta inesperada al publicar: {data}")
+    return data["id"]
+
+
+def main():
+    token = os.environ.get("IG_ACCESS_TOKEN")
+    ig_user_id = os.environ.get("IG_USER_ID")
+    image_url = os.environ.get("STORY_IMAGE_URL")
+
+    missing = [
+        name
+        for name, val in [
+            ("IG_ACCESS_TOKEN", token),
+            ("IG_USER_ID", ig_user_id),
+            ("STORY_IMAGE_URL", image_url),
+        ]
+        if not val
+    ]
+    if missing:
+        print(f"Faltan variables de entorno: {', '.join(missing)}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Creando contenedor de media para {image_url} ...")
+    container_id = create_media_container(ig_user_id, image_url, token)
+    print(f"Contenedor creado: {container_id}")
+
+    wait_until_ready(container_id, token)
+
+    media_id = publish_media(ig_user_id, container_id, token)
+    print(f"¡Story publicada! media id: {media_id}")
+
+
+if __name__ == "__main__":
+    main()
