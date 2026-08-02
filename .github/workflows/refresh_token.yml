@@ -1,0 +1,37 @@
+name: Refrescar token de Instagram
+
+on:
+  schedule:
+    # Cada 50 días (el token dura ~60, así queda margen de sobra)
+    - cron: "0 6 */50 * *"
+  workflow_dispatch: {}
+
+jobs:
+  refrescar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install requests
+
+      - name: Refrescar token
+        id: refresh
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: |
+          NEW_TOKEN=$(python refresh_token.py)
+          echo "::add-mask::$NEW_TOKEN"
+          echo "new_token=$NEW_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Actualizar el secret IG_ACCESS_TOKEN
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT_FOR_SECRETS }}
+        run: |
+          gh secret set IG_ACCESS_TOKEN --body "${{ steps.refresh.outputs.new_token }}" --repo ${{ github.repository }}
