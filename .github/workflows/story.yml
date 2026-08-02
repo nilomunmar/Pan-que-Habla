@@ -1,0 +1,62 @@
+name: Publicar historia de Instagram
+
+on:
+  schedule:
+    - cron: "0 9 * * *"   # se evalúa cada día a las 09:00 UTC; scheduler.py decide si toca
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Forzar publicación aunque no toque hoy"
+        type: boolean
+        default: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Comprobar si toca publicar hoy
+        id: check
+        run: |
+          ARGS=""
+          if [ "${{ inputs.force }}" = "true" ]; then
+            ARGS="--force"
+          fi
+          python scheduler.py $ARGS
+        continue-on-error: true
+
+      - name: Generar imagen de la historia
+        if: steps.check.outputs.should_run == 'true' || inputs.force == true
+        run: python generate_story.py
+
+      # Subimos la imagen generada al propio repo para tener una URL pública
+      # estable (raw.githubusercontent.com) que la Graph API pueda leer.
+      # IMPORTANTE: el repo debe ser público para que esta URL sea accesible.
+      - name: Publicar imagen en el repo (para URL pública)
+        if: steps.check.outputs.should_run == 'true' || inputs.force == true
+        run: |
+          git config user.name "story-bot"
+          git config user.email "story-bot@users.noreply.github.com"
+          git add output/story.jpg output/state.json
+          git diff --staged --quiet || git commit -m "Nueva historia generada [skip ci]"
+          git push
+
+      - name: Publicar en Instagram
+        if: steps.check.outputs.should_run == 'true' || inputs.force == true
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          STORY_IMAGE_URL: https://raw.githubusercontent.com/${{ github.repository }}/main/output/story.jpg
+        run: python publish_instagram.py
