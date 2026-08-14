@@ -8,7 +8,7 @@ from datetime import date
 # 1. FECHA OBJETIVO (el día de la ponencia del pan que habla)
 #    Formato: date(AÑO, MES, DIA)
 # ------------------------------------------------------------------
-TARGET_DATE = date(2027, 7, 31)  # <-- CAMBIA ESTO por la fecha real
+TARGET_DATE = date(2027, 7, 22)  # <-- CAMBIA ESTO por la fecha real
 
 # ------------------------------------------------------------------
 # 2. FECHA DE CAMBIO DE FRECUENCIA (semanal -> diario)
